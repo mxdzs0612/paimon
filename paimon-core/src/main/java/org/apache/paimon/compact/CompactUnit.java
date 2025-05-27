@@ -18,6 +18,7 @@
 
 package org.apache.paimon.compact;
 
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.mergetree.LevelSortedRun;
 
@@ -31,15 +32,23 @@ public interface CompactUnit {
 
     List<DataFileMeta> files();
 
+    List<Path> externalPaths();
+
     static CompactUnit fromLevelRuns(int outputLevel, List<LevelSortedRun> runs) {
+        return fromLevelRuns(outputLevel, runs, new ArrayList<>());
+    }
+
+    static CompactUnit fromLevelRuns(
+            int outputLevel, List<LevelSortedRun> runs, List<Path> externalPaths) {
         List<DataFileMeta> files = new ArrayList<>();
         for (LevelSortedRun run : runs) {
             files.addAll(run.run().files());
         }
-        return fromFiles(outputLevel, files);
+        return fromFiles(outputLevel, files, externalPaths);
     }
 
-    static CompactUnit fromFiles(int outputLevel, List<DataFileMeta> files) {
+    static CompactUnit fromFiles(
+            int outputLevel, List<DataFileMeta> files, List<Path> externalPaths) {
         return new CompactUnit() {
             @Override
             public int outputLevel() {
@@ -49,6 +58,11 @@ public interface CompactUnit {
             @Override
             public List<DataFileMeta> files() {
                 return files;
+            }
+
+            @Override
+            public List<Path> externalPaths() {
+                return externalPaths;
             }
         };
     }

@@ -18,10 +18,12 @@
 
 package org.apache.paimon.compact;
 
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -43,7 +45,7 @@ public interface CompactManager extends Closeable {
      *
      * @param fullCompaction if caller needs a guaranteed full compaction
      */
-    void triggerCompaction(boolean fullCompaction);
+    void triggerCompaction(boolean fullCompaction, List<Path> externalPaths);
 
     /** Get compaction result. Wait finish if {@code blocking} is true. */
     Optional<CompactResult> getCompactionResult(boolean blocking)

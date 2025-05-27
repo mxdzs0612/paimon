@@ -125,6 +125,7 @@ public class CompactProcedure extends ProcedureBase {
                 tableOptions,
                 whereSql,
                 "",
+                null,
                 null);
     }
 
@@ -137,7 +138,8 @@ public class CompactProcedure extends ProcedureBase {
             String tableOptions,
             String whereSql,
             String partitionIdleTime,
-            String compactStrategy)
+            String compactStrategy,
+            String externalScheme)
             throws Exception {
         Map<String, String> catalogOptions = catalog.options();
         Map<String, String> tableConf =
@@ -160,6 +162,9 @@ public class CompactProcedure extends ProcedureBase {
 
             if (checkCompactStrategy(compactStrategy)) {
                 action.withFullCompaction(compactStrategy.trim().equalsIgnoreCase(FULL));
+            }
+            if (StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+                action.withFullCompaction(true).withExternalCompaction(externalScheme);
             }
             jobName = "Compact Job";
         } else if (!orderStrategy.isEmpty() && !orderByColumns.isEmpty()) {

@@ -20,6 +20,7 @@ package org.apache.paimon.flink.sink;
 
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.memory.MemoryPoolFactory;
 import org.apache.paimon.memory.MemorySegmentPool;
@@ -56,7 +57,8 @@ public interface StoreSinkWrite {
 
     SinkRecord toLogRecord(SinkRecord record);
 
-    void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception;
+    void compact(BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception;
 
     void notifyNewFiles(long snapshotId, BinaryRow partition, int bucket, List<DataFileMeta> files);
 

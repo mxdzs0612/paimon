@@ -193,7 +193,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         // compact
         try (BatchTableWrite write = writeBuilder.newWrite();
                 BatchTableCommit commit = writeBuilder.newCommit()) {
-            write.compact(split.partition(), split.bucket(), true);
+            write.compact(split.partition(), split.bucket(), true, new ArrayList<>());
             commit.commit(write.prepareCommit());
         }
 
@@ -608,8 +608,8 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         write.write(rowData(2, 10, 210L));
         write.write(rowData(2, 20, 220L));
         write.write(rowDataWithKind(RowKind.DELETE, 2, 10, 210L));
-        write.compact(binaryRow(1), 0, true);
-        write.compact(binaryRow(2), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
+        write.compact(binaryRow(2), 0, true, new ArrayList<>());
         commit.commit(0, write.prepareCommit(true, 0));
 
         List<Split> splits =
@@ -631,8 +631,8 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
 
         write.write(rowDataWithKind(RowKind.DELETE, 1, 40, 140L));
         write.write(rowData(2, 40, 241L));
-        write.compact(binaryRow(1), 0, true);
-        write.compact(binaryRow(2), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
+        write.compact(binaryRow(2), 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         splits =
@@ -657,8 +657,8 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         write.write(rowData(2, 20, 221L));
         write.write(rowDataWithKind(RowKind.DELETE, 2, 20, 221L));
         write.write(rowData(2, 40, 242L));
-        write.compact(binaryRow(1), 0, true);
-        write.compact(binaryRow(2), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
+        write.compact(binaryRow(2), 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
 
         write.close();
@@ -1793,11 +1793,11 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         write.write(rowData(1, 10, 200L));
         commit.commit(1, write.prepareCommit(true, 1));
 
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         write.write(rowData(1, 10, 300L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(3, write.prepareCommit(true, 3));
 
         write.close();
@@ -1853,7 +1853,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         commit = writeBuilder.newCommit();
         write.write(rowData(1, 10, 100L));
         write.write(rowData(1, 11, 101L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(write.prepareCommit());
 
         // 2.1 read add file
@@ -1922,7 +1922,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         List<String> result = getResult(read, roTable.newScan().plan().splits(), rowDataToString);
         assertThat(result).isEmpty();
 
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         result = getResult(read, roTable.newScan().plan().splits(), rowDataToString);
@@ -1930,7 +1930,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
 
         write.write(rowDataWithKind(RowKind.INSERT, 1, 10, 101L));
         write.write(rowDataWithKind(RowKind.INSERT, 2, 21, 210L));
-        write.compact(binaryRow(2), 0, true);
+        write.compact(binaryRow(2), 0, true, new ArrayList<>());
         commit.commit(3, write.prepareCommit(true, 3));
 
         result = getResult(read, roTable.newScan().plan().splits(), rowDataToString);
@@ -1966,7 +1966,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         StreamTableCommit commit = table.newCommit(commitUser);
 
         write.write(rowDataWithKind(RowKind.INSERT, 1, 10, 100L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(0, write.prepareCommit(true, 0));
 
         ReadOptimizedTable roTable = new ReadOptimizedTable(table);
@@ -2111,7 +2111,7 @@ public class PrimaryKeySimpleTableTest extends SimpleTableTestBase {
         assertThat(result.get(1000)).isEqualTo("+I[1, 1000, 1001]");
 
         // compact all files
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
 
         // split1[compactedFile]

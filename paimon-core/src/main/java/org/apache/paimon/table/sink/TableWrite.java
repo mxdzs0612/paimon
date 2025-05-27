@@ -22,10 +22,13 @@ import org.apache.paimon.annotation.Public;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.BundleRecords;
 import org.apache.paimon.memory.MemorySegmentPool;
 import org.apache.paimon.metrics.MetricRegistry;
 import org.apache.paimon.table.Table;
+
+import java.util.List;
 
 /**
  * Write of {@link Table} to provide {@link InternalRow} writing.
@@ -74,7 +77,8 @@ public interface TableWrite extends AutoCloseable {
      * 'changelog-producer' to 'full-compaction', please execute this method regularly to produce
      * changelog.
      */
-    void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception;
+    void compact(BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception;
 
     /** Set {@link MetricRegistry} to table write. */
     TableWrite withMetricRegistry(MetricRegistry registry);

@@ -70,7 +70,8 @@ public class AsyncLookupSinkWrite extends StoreSinkWriteImpl {
         if (activeBucketsStateValues != null) {
             for (StoreSinkWriteState.StateValue stateValue : activeBucketsStateValues) {
                 try {
-                    write.compact(stateValue.partition(), stateValue.bucket(), false);
+                    write.compact(
+                            stateValue.partition(), stateValue.bucket(), false, new ArrayList<>());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

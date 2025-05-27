@@ -49,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -126,11 +127,13 @@ public class SnapshotReaderTest {
         write.compact(
                 serializer.toBinaryRow(GenericRow.of(BinaryString.fromString("one"))).copy(),
                 0,
-                true);
+                true,
+                new ArrayList<>());
         write.compact(
                 serializer.toBinaryRow(GenericRow.of(BinaryString.fromString("two"))).copy(),
                 0,
-                true);
+                true,
+                new ArrayList<>());
         commit.commit(3, write.prepareCommit(true, 3));
 
         dataSplits = reader.read().dataSplits();

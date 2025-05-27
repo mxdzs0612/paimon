@@ -356,7 +356,7 @@ public class FileDeletionTest {
                 .forEach(
                         writer -> {
                             try {
-                                writer.compact(true);
+                                writer.compact(true, new ArrayList<>());
                                 writer.sync();
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
@@ -571,7 +571,7 @@ public class FileDeletionTest {
                 .forEach(
                         writer -> {
                             try {
-                                writer.compact(true);
+                                writer.compact(true, new ArrayList<>());
                                 writer.sync();
                             } catch (Exception e) {
                                 throw new RuntimeException(e);

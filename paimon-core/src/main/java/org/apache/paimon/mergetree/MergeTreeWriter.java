@@ -27,6 +27,7 @@ import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.compression.CompressOptions;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.CompactIncrement;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.DataIncrement;
@@ -166,7 +167,7 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
         long sequenceNumber = newSequenceNumber();
         boolean success = writeBuffer.put(sequenceNumber, kv.valueKind(), kv.key(), kv.value());
         if (!success) {
-            flushWriteBuffer(false, false);
+            flushWriteBuffer(false, false, new ArrayList<>());
             success = writeBuffer.put(sequenceNumber, kv.valueKind(), kv.key(), kv.value());
             if (!success) {
                 throw new RuntimeException("Mem table is too small to hold a single element.");
@@ -175,8 +176,8 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
     }
 
     @Override
-    public void compact(boolean fullCompaction) throws Exception {
-        flushWriteBuffer(true, fullCompaction);
+    public void compact(boolean fullCompaction, List<Path> externalPaths) throws Exception {
+        flushWriteBuffer(true, fullCompaction, externalPaths);
     }
 
     @Override
@@ -203,11 +204,12 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
     public void flushMemory() throws Exception {
         boolean success = writeBuffer.flushMemory();
         if (!success) {
-            flushWriteBuffer(false, false);
+            flushWriteBuffer(false, false, new ArrayList<>());
         }
     }
 
-    private void flushWriteBuffer(boolean waitForLatestCompaction, boolean forcedFullCompaction)
+    private void flushWriteBuffer(
+            boolean waitForLatestCompaction, boolean forcedFullCompaction, List<Path> externalPaths)
             throws Exception {
         if (writeBuffer.size() > 0) {
             if (compactManager.shouldWaitForLatestCompaction()) {
@@ -219,7 +221,8 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
                             ? writerFactory.createRollingChangelogFileWriter(0)
                             : null;
             final RollingFileWriter<KeyValue, DataFileMeta> dataWriter =
-                    writerFactory.createRollingMergeTreeFileWriter(0, FileSource.APPEND);
+                    writerFactory.createRollingMergeTreeFileWriter(
+                            0, FileSource.APPEND, externalPaths);
 
             try {
                 writeBuffer.forEach(
@@ -256,12 +259,12 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
         }
 
         trySyncLatestCompaction(waitForLatestCompaction);
-        compactManager.triggerCompaction(forcedFullCompaction);
+        compactManager.triggerCompaction(forcedFullCompaction, externalPaths);
     }
 
     @Override
     public CommitIncrement prepareCommit(boolean waitCompaction) throws Exception {
-        flushWriteBuffer(waitCompaction, false);
+        flushWriteBuffer(waitCompaction, false, new ArrayList<>());
         if (commitForceCompact) {
             waitCompaction = true;
         }
@@ -279,7 +282,7 @@ public class MergeTreeWriter implements RecordWriter<KeyValue>, MemoryOwner {
 
     @Override
     public boolean compactNotCompleted() {
-        compactManager.triggerCompaction(false);
+        compactManager.triggerCompaction(false, new ArrayList<>());
         return compactManager.compactNotCompleted();
     }
 

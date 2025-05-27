@@ -22,6 +22,7 @@ import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.compact.CompactUnit;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.DataFileTestUtils;
 import org.apache.paimon.mergetree.Levels;
@@ -260,7 +261,7 @@ public class MergeTreeCompactManagerTest {
                         false,
                         false,
                         null);
-        manager.triggerCompaction(false);
+        manager.triggerCompaction(false, new ArrayList<>());
         manager.getCompactionResult(true);
         List<LevelMinMax> outputs =
                 levels.allFiles().stream().map(LevelMinMax::new).collect(Collectors.toList());
@@ -285,7 +286,10 @@ public class MergeTreeCompactManagerTest {
 
         @Override
         public CompactResult rewrite(
-                int outputLevel, boolean dropDelete, List<List<SortedRun>> sections)
+                int outputLevel,
+                boolean dropDelete,
+                List<List<SortedRun>> sections,
+                List<Path> externalPaths)
                 throws Exception {
             assertThat(dropDelete).isEqualTo(expectedDropDelete);
             int minKey = Integer.MAX_VALUE;

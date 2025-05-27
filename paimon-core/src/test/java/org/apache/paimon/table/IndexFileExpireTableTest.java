@@ -36,6 +36,7 @@ import org.apache.paimon.utils.TagManager;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -206,7 +207,7 @@ public class IndexFileExpireTableTest extends PrimaryKeyTableTestBase {
         commit.commit(1, write.prepareCommit(true, 1));
 
         // compact only
-        write.compact(row(1), 1, true);
+        write.compact(row(1), 1, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         // commit bucket 2 only

@@ -156,8 +156,8 @@ public class CompactorSourceITCase extends AbstractTestBase {
 
         write.write(rowData(1, 1511, BinaryString.fromString("20221208"), 15));
         write.write(rowData(1, 1510, BinaryString.fromString("20221209"), 15));
-        write.compact(binaryRow("20221208", 15), 0, true);
-        write.compact(binaryRow("20221209", 15), 0, true);
+        write.compact(binaryRow("20221208", 15), 0, true, new ArrayList<>());
+        write.compact(binaryRow("20221209", 15), 0, true, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         write.write(rowData(2, 1520, BinaryString.fromString("20221208"), 15));

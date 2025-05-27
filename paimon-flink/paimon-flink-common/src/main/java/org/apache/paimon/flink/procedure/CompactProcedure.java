@@ -22,6 +22,7 @@ import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.flink.action.CompactAction;
 import org.apache.paimon.flink.action.SortCompactAction;
 import org.apache.paimon.utils.Preconditions;
+import org.apache.paimon.utils.StringUtils;
 import org.apache.paimon.utils.TimeUtils;
 
 import org.apache.flink.table.annotation.ArgumentHint;
@@ -64,6 +65,10 @@ public class CompactProcedure extends ProcedureBase {
                 @ArgumentHint(
                         name = "compact_strategy",
                         type = @DataTypeHint("STRING"),
+                        isOptional = true),
+                @ArgumentHint(
+                        name = "external_scheme",
+                        type = @DataTypeHint("STRING"),
                         isOptional = true)
             })
     public String[] call(
@@ -75,7 +80,8 @@ public class CompactProcedure extends ProcedureBase {
             String tableOptions,
             String where,
             String partitionIdleTime,
-            String compactStrategy)
+            String compactStrategy,
+            String externalScheme)
             throws Exception {
         Map<String, String> catalogOptions = catalog.options();
         Map<String, String> tableConf =
@@ -98,6 +104,9 @@ public class CompactProcedure extends ProcedureBase {
 
             if (checkCompactStrategy(compactStrategy)) {
                 action.withFullCompaction(compactStrategy.trim().equalsIgnoreCase(FULL));
+            }
+            if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+                action.withFullCompaction(true).withExternalCompaction(externalScheme);
             }
             jobName = "Compact Job : " + identifier.getFullName();
         } else if (!isNullOrWhitespaceOnly(orderStrategy)

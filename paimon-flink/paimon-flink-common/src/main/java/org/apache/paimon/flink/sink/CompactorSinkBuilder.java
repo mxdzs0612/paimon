@@ -39,9 +39,13 @@ public class CompactorSinkBuilder {
 
     private final boolean fullCompaction;
 
-    public CompactorSinkBuilder(FileStoreTable table, boolean fullCompaction) {
+    private final String externalScheme;
+
+    public CompactorSinkBuilder(
+            FileStoreTable table, boolean fullCompaction, String externalScheme) {
         this.table = table;
         this.fullCompaction = fullCompaction;
+        this.externalScheme = externalScheme;
     }
 
     public CompactorSinkBuilder withInput(DataStream<RowData> input) {
@@ -68,6 +72,6 @@ public class CompactorSinkBuilder {
                         .orElse(null);
         DataStream<RowData> partitioned =
                 partition(input, new BucketsRowChannelComputer(), parallelism);
-        return new CompactorSink(table, fullCompaction).sinkFrom(partitioned);
+        return new CompactorSink(table, fullCompaction, externalScheme).sinkFrom(partitioned);
     }
 }

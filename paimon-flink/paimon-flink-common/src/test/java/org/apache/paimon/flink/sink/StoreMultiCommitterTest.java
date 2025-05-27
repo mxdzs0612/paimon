@@ -561,11 +561,11 @@ class StoreMultiCommitterTest {
 
         write1.write(GenericRow.of(1, 10L));
         write2.write(GenericRow.of(1, 1.1, BinaryString.fromString("AAA")));
-        write2.compact(BinaryRow.EMPTY_ROW, 0, false);
+        write2.compact(BinaryRow.EMPTY_ROW, 0, false, new ArrayList<>());
         write2.write(GenericRow.of(1, 1.2, BinaryString.fromString("aaa")));
-        write2.compact(BinaryRow.EMPTY_ROW, 0, false);
+        write2.compact(BinaryRow.EMPTY_ROW, 0, false, new ArrayList<>());
         write2.write(GenericRow.of(2, 2.1, BinaryString.fromString("BBB")));
-        write2.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write2.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         testHarness.processElement(
                 getMultiTableCommittable(
                         firstTable,

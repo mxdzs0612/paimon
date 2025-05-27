@@ -88,6 +88,10 @@ public class CompactDatabaseProcedure extends ProcedureBase {
                 @ArgumentHint(
                         name = "compact_strategy",
                         type = @DataTypeHint("STRING"),
+                        isOptional = true),
+                @ArgumentHint(
+                        name = "external_scheme",
+                        type = @DataTypeHint("STRING"),
                         isOptional = true)
             })
     public String[] call(
@@ -98,7 +102,8 @@ public class CompactDatabaseProcedure extends ProcedureBase {
             String excludingTables,
             String tableOptions,
             String partitionIdleTime,
-            String compactStrategy)
+            String compactStrategy,
+            String externalScheme)
             throws Exception {
         partitionIdleTime = notnull(partitionIdleTime);
         Map<String, String> catalogOptions = catalog.options();
@@ -117,6 +122,9 @@ public class CompactDatabaseProcedure extends ProcedureBase {
 
         if (checkCompactStrategy(compactStrategy)) {
             action.withFullCompaction(compactStrategy.trim().equalsIgnoreCase(FULL));
+        }
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            action.withExternalCompaction(externalScheme);
         }
 
         return execute(procedureContext, action, "Compact database job");

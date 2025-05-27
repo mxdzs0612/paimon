@@ -243,11 +243,11 @@ public class TableWriteTest {
         write.write(GenericRow.ofKind(RowKind.DELETE, 1, 2, 20L));
         commit.commit(0, write.prepareCommit(false, 0));
 
-        write.compact(partition(1), 0, true);
+        write.compact(partition(1), 0, true, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         write.write(GenericRow.of(1, 2, 21L));
-        write.compact(partition(1), 0, true);
+        write.compact(partition(1), 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         write.close();
@@ -282,13 +282,13 @@ public class TableWriteTest {
 
         // we use the same commitIdentifier to mimic a long pause between committing the APPEND
         // snapshot and the COMPACT snapshot
-        write.compact(partition(1), 0, true);
+        write.compact(partition(1), 0, true, new ArrayList<>());
         List<CommitMessage> message1 = write.prepareCommit(true, 1);
         // nothing is written, however message1 is not committed, so writer should be kept
         List<CommitMessage> message2 = write.prepareCommit(false, 2);
 
         write.write(GenericRow.of(1, 3, 30L));
-        write.compact(partition(1), 0, true);
+        write.compact(partition(1), 0, true, new ArrayList<>());
         commit.commit(1, message1);
         commit.commit(2, message2);
         commit.commit(3, write.prepareCommit(true, 3));

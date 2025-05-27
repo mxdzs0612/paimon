@@ -122,7 +122,7 @@ public class ChangelogMergeTreeRewriterTest {
                         rewriteChangelog,
                         true)) {
             try {
-                rewriter.rewrite(5, true, sections);
+                rewriter.rewrite(5, true, sections, new ArrayList<>());
                 fail();
             } catch (IOException ignore) {
                 // ignore
@@ -166,7 +166,7 @@ public class ChangelogMergeTreeRewriterTest {
                         rewriteChangelog,
                         false)) {
 
-            rewriter.rewrite(5, true, sections);
+            rewriter.rewrite(5, true, sections, new ArrayList<>());
             List<java.nio.file.Path> files =
                     Files.walk(Paths.get(testPath.toString()))
                             .filter(Files::isRegularFile)

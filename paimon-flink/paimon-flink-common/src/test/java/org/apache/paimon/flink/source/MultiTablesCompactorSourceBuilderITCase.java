@@ -235,8 +235,8 @@ public class MultiTablesCompactorSourceBuilderITCase extends AbstractTestBase
 
                 write.write(rowData(1, 1511, 15, BinaryString.fromString("20221208")));
                 write.write(rowData(1, 1510, 15, BinaryString.fromString("20221209")));
-                write.compact(binaryRow("20221208", 15), 0, true);
-                write.compact(binaryRow("20221209", 15), 0, true);
+                write.compact(binaryRow("20221208", 15), 0, true, new ArrayList<>());
+                write.compact(binaryRow("20221209", 15), 0, true, new ArrayList<>());
                 commit.commit(1, write.prepareCommit(true, 1));
 
                 writeData(
@@ -405,8 +405,8 @@ public class MultiTablesCompactorSourceBuilderITCase extends AbstractTestBase
 
                 write.write(rowData(1, 1511, 15, BinaryString.fromString("20221208")));
                 write.write(rowData(1, 1510, 15, BinaryString.fromString("20221209")));
-                write.compact(binaryRow("20221208", 15), 0, true);
-                write.compact(binaryRow("20221209", 15), 0, true);
+                write.compact(binaryRow("20221208", 15), 0, true, new ArrayList<>());
+                write.compact(binaryRow("20221209", 15), 0, true, new ArrayList<>());
                 commit.commit(1, write.prepareCommit(true, 1));
 
                 writeData(

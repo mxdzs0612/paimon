@@ -18,6 +18,7 @@
 
 package org.apache.paimon.utils;
 
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 
 import java.util.Collection;
@@ -41,7 +42,7 @@ public interface RecordWriter<T> {
      *
      * @param fullCompaction whether to trigger full compaction or just normal compaction
      */
-    void compact(boolean fullCompaction) throws Exception;
+    void compact(boolean fullCompaction, List<Path> externalPaths) throws Exception;
 
     /**
      * Add files to the internal {@link org.apache.paimon.compact.CompactManager}.

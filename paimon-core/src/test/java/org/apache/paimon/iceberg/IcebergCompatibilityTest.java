@@ -121,7 +121,7 @@ public class IcebergCompatibilityTest {
         commit.commit(1, write.prepareCommit(false, 1));
         assertThat(getIcebergResult()).containsExactlyInAnyOrder("Record(1, 10)", "Record(2, 20)");
 
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
         assertThat(getIcebergResult()).containsExactlyInAnyOrder("Record(1, 10)", "Record(2, 20)");
 
@@ -167,7 +167,7 @@ public class IcebergCompatibilityTest {
         assertThat(getIcebergResult()).containsExactlyInAnyOrder("Record(1, 10)", "Record(2, 20)");
 
         write.write(GenericRow.of(2, 21));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
         assertThat(getIcebergResult()).containsExactlyInAnyOrder("Record(1, 10)", "Record(2, 21)");
 
@@ -176,7 +176,7 @@ public class IcebergCompatibilityTest {
         // not changed because no full compaction
         assertThat(getIcebergResult()).containsExactlyInAnyOrder("Record(1, 10)", "Record(2, 21)");
 
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
 
         // In dv mode, full compaction will remove all dv index and rewrite data files
@@ -268,7 +268,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(1, 11));
         write.write(GenericRow.of(3, 30));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         List<CommitMessage> commitMessages2 = write.prepareCommit(true, 2);
         commit.commit(2, commitMessages2);
         assertThat(table.latestSnapshot()).isPresent().map(Snapshot::id).hasValue(3L);
@@ -317,7 +317,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(1, 11, BinaryString.fromString("one")));
         write.write(GenericRow.of(3, 30, BinaryString.fromString("three")));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
         assertThat(getIcebergResult())
                 .containsExactlyInAnyOrder(
@@ -360,7 +360,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(1, 11));
         write.write(GenericRow.of(3, 30));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
         assertThat(table.snapshotManager().latestSnapshotId()).isEqualTo(3L);
         metadata =
@@ -421,7 +421,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(2, 21));
         write.write(GenericRow.of(3, 31));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(3, write.prepareCommit(true, 3));
         assertThat(table.snapshotManager().latestSnapshotId()).isEqualTo(5L);
         metadata =
@@ -792,7 +792,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(3, 30));
         write.write(GenericRow.of(4, 40));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         assertThat(getIcebergResult())
@@ -886,7 +886,7 @@ public class IcebergCompatibilityTest {
 
         write.write(GenericRow.of(3, 30));
         write.write(GenericRow.of(4, 40));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(2, write.prepareCommit(true, 2));
 
         assertThat(getIcebergResult())
@@ -913,7 +913,7 @@ public class IcebergCompatibilityTest {
         table.fileIO().deleteDirectoryQuietly(new Path(table.location(), "metadata"));
 
         write.write(GenericRow.of(5, 50));
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
 
         Map<String, IcebergRef> refsAfterMetadataDelete =
@@ -1070,7 +1070,7 @@ public class IcebergCompatibilityTest {
                 for (BinaryRow partition :
                         round.stream().map(t -> t.partition).collect(Collectors.toSet())) {
                     for (int b = 0; b < 2; b++) {
-                        write.compact(partition, b, true);
+                        write.compact(partition, b, true, new ArrayList<>());
                     }
                 }
             }

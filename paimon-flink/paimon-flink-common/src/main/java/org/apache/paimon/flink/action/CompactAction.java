@@ -81,6 +81,8 @@ public class CompactAction extends TableActionBase {
 
     private Boolean fullCompaction;
 
+    private String externalScheme;
+
     public CompactAction(
             String database,
             String tableName,
@@ -119,6 +121,11 @@ public class CompactAction extends TableActionBase {
 
     public CompactAction withFullCompaction(Boolean fullCompaction) {
         this.fullCompaction = fullCompaction;
+        return this;
+    }
+
+    public CompactAction withExternalCompaction(String externalScheme) {
+        this.externalScheme = externalScheme;
         return this;
     }
 
@@ -168,7 +175,8 @@ public class CompactAction extends TableActionBase {
         }
         CompactorSourceBuilder sourceBuilder =
                 new CompactorSourceBuilder(identifier.getFullName(), table);
-        CompactorSinkBuilder sinkBuilder = new CompactorSinkBuilder(table, fullCompaction);
+        CompactorSinkBuilder sinkBuilder =
+                new CompactorSinkBuilder(table, fullCompaction, externalScheme);
 
         sourceBuilder.withPartitionPredicate(getPredicate());
         DataStreamSource<RowData> source =

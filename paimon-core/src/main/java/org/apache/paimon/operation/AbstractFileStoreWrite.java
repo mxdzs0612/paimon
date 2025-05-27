@@ -25,6 +25,7 @@ import org.apache.paimon.compact.CompactDeletionFile;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.index.IndexFileMeta;
 import org.apache.paimon.index.IndexMaintainer;
 import org.apache.paimon.io.DataFileMeta;
@@ -165,8 +166,10 @@ public abstract class AbstractFileStoreWrite<T> implements FileStoreWrite<T> {
     }
 
     @Override
-    public void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception {
-        getWriterWrapper(partition, bucket).writer.compact(fullCompaction);
+    public void compact(
+            BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception {
+        getWriterWrapper(partition, bucket).writer.compact(fullCompaction, externalPaths);
     }
 
     @Override

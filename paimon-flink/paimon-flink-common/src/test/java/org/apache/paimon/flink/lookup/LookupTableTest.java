@@ -928,7 +928,7 @@ public class LookupTableTest extends TableTestBase {
 
         // initialize
         write(storeTable, ioManager, GenericRow.of(1, 11, 111));
-        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, true);
+        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, true, false);
         table.open();
 
         List<InternalRow> result = table.get(row(1));
@@ -943,7 +943,7 @@ public class LookupTableTest extends TableTestBase {
         assertRow(result.get(0), 1, 11, 111); // old value because there is no compact
 
         // only L0 occur compact
-        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, false);
+        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, false, false);
         table.refresh();
         result = table.get(row(1));
         assertThat(result).hasSize(1);
@@ -957,7 +957,7 @@ public class LookupTableTest extends TableTestBase {
         assertRow(result.get(0), 1, 11, 222); // old value
 
         // full compact
-        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, true);
+        compact(compactTable, BinaryRow.EMPTY_ROW, 0, ioManager, true, false);
         table.refresh();
         result = table.get(row(1));
         assertThat(result).hasSize(1);

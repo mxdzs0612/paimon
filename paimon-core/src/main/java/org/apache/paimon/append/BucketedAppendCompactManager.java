@@ -25,6 +25,7 @@ import org.apache.paimon.compact.CompactFutureManager;
 import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.compact.CompactTask;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.operation.metrics.CompactionMetrics;
 import org.apache.paimon.operation.metrics.MetricUtils;
@@ -85,7 +86,7 @@ public class BucketedAppendCompactManager extends CompactFutureManager {
     }
 
     @Override
-    public void triggerCompaction(boolean fullCompaction) {
+    public void triggerCompaction(boolean fullCompaction, List<Path> externalPaths) {
         if (fullCompaction) {
             triggerFullCompaction();
         } else {

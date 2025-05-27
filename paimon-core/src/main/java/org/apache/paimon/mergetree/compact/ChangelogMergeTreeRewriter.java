@@ -22,6 +22,7 @@ import org.apache.paimon.CoreOptions.MergeEngine;
 import org.apache.paimon.KeyValue;
 import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.FileReaderFactory;
 import org.apache.paimon.io.KeyValueFileWriterFactory;
@@ -101,11 +102,15 @@ public abstract class ChangelogMergeTreeRewriter extends MergeTreeCompactRewrite
 
     @Override
     public CompactResult rewrite(
-            int outputLevel, boolean dropDelete, List<List<SortedRun>> sections) throws Exception {
+            int outputLevel,
+            boolean dropDelete,
+            List<List<SortedRun>> sections,
+            List<Path> externalPaths)
+            throws Exception {
         if (rewriteChangelog(outputLevel, dropDelete, sections)) {
             return rewriteOrProduceChangelog(outputLevel, sections, dropDelete, true);
         } else {
-            return rewriteCompaction(outputLevel, dropDelete, sections);
+            return rewriteCompaction(outputLevel, dropDelete, sections, externalPaths);
         }
     }
 

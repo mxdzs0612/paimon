@@ -25,6 +25,8 @@ import org.apache.paimon.utils.SnapshotManager;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tests for {@link FullCompactedStartingScanner}. */
@@ -39,7 +41,7 @@ public class FullCompactedStartingScannerTest extends ScannerTestBase {
         for (int i = 0; i < 5; i++) {
             write.write(rowData(1, 10, 102L));
             write.write(rowData(1, 20, 201L));
-            write.compact(binaryRow(1), 0, true);
+            write.compact(binaryRow(1), 0, true, new ArrayList<>());
             commit.commit(i, write.prepareCommit(true, i));
         }
 
@@ -75,7 +77,7 @@ public class FullCompactedStartingScannerTest extends ScannerTestBase {
         write.write(rowData(1, 10, 101L));
         write.write(rowData(1, 30, 300L));
         write.write(rowDataWithKind(RowKind.DELETE, 1, 40, 400L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         write.write(rowData(1, 10, 102L));

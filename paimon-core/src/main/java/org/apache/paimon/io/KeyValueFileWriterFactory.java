@@ -41,12 +41,17 @@ import org.apache.paimon.utils.FileStorePathFactory;
 import org.apache.paimon.utils.Pair;
 import org.apache.paimon.utils.StatsCollectorFactories;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,6 +61,8 @@ import java.util.stream.Collectors;
 
 /** A factory to create {@link FileWriter}s for writing {@link KeyValue} files. */
 public class KeyValueFileWriterFactory {
+
+    private static final Logger LOG = LoggerFactory.getLogger(KeyValueFileWriterFactory.class);
 
     private final FileIO fileIO;
     private final long schemaId;
@@ -97,10 +104,22 @@ public class KeyValueFileWriterFactory {
 
     public RollingFileWriter<KeyValue, DataFileMeta> createRollingMergeTreeFileWriter(
             int level, FileSource fileSource) {
+        return createRollingMergeTreeFileWriter(level, fileSource, new ArrayList<>());
+    }
+
+    public RollingFileWriter<KeyValue, DataFileMeta> createRollingMergeTreeFileWriter(
+            int level, FileSource fileSource, List<Path> externalPaths) {
         WriteFormatKey key = new WriteFormatKey(level, false);
         return new RollingFileWriter<>(
                 () -> {
-                    DataFilePathFactory pathFactory = formatContext.pathFactory(key);
+                    DataFilePathFactory pathFactory = formatContext.pathFactory(key, externalPaths);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(
+                                "externalPaths size is {}, New datafile path is {}, external path status is {}",
+                                externalPaths.size(),
+                                pathFactory.newPath(),
+                                pathFactory.isExternalPath());
+                    }
                     return createDataFileWriter(
                             pathFactory.newPath(), key, fileSource, pathFactory.isExternalPath());
                 },
@@ -386,13 +405,17 @@ public class KeyValueFileWriterFactory {
         }
 
         private DataFilePathFactory pathFactory(WriteFormatKey key) {
+            return pathFactory(key, new ArrayList<>());
+        }
+
+        private DataFilePathFactory pathFactory(WriteFormatKey key, List<Path> externalPaths) {
             String format = key2Format.apply(key);
             return format2PathFactory.computeIfAbsent(
                     format,
                     k ->
                             parentFactories
                                     .apply(format)
-                                    .createDataFilePathFactory(partition, bucket));
+                                    .createDataFilePathFactory(partition, bucket, externalPaths));
         }
 
         private FormatWriterFactory writerFactory(WriteFormatKey key) {

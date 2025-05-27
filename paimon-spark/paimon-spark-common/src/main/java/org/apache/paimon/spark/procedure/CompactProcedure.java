@@ -25,6 +25,7 @@ import org.apache.paimon.append.AppendCompactCoordinator;
 import org.apache.paimon.append.AppendCompactTask;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.manifest.PartitionEntry;
 import org.apache.paimon.operation.BaseAppendFileStoreWrite;
 import org.apache.paimon.predicate.Predicate;
@@ -90,6 +91,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.paimon.CoreOptions.DATA_FILE_EXTERNAL_PATHS;
 import static org.apache.paimon.CoreOptions.createCommitUser;
 import static org.apache.paimon.utils.Preconditions.checkArgument;
 import static org.apache.spark.sql.types.DataTypes.StringType;
@@ -110,6 +112,7 @@ public class CompactProcedure extends BaseProcedure {
                 ProcedureParameter.required("table", StringType),
                 ProcedureParameter.optional("partitions", StringType),
                 ProcedureParameter.optional("compact_strategy", StringType),
+                ProcedureParameter.optional("external_scheme", StringType),
                 ProcedureParameter.optional("order_strategy", StringType),
                 ProcedureParameter.optional("order_by", StringType),
                 ProcedureParameter.optional("where", StringType),
@@ -146,15 +149,16 @@ public class CompactProcedure extends BaseProcedure {
         String partitions = blank(args, 1) ? null : args.getString(1);
         // make full compact strategy as default.
         String compactStrategy = blank(args, 2) ? FULL : args.getString(2);
-        String sortType = blank(args, 3) ? OrderType.NONE.name() : args.getString(3);
+        String externalScheme = blank(args, 3) ? "" : args.getString(3);
+        String sortType = blank(args, 4) ? OrderType.NONE.name() : args.getString(4);
         List<String> sortColumns =
-                blank(args, 4)
+                blank(args, 5)
                         ? Collections.emptyList()
-                        : Arrays.asList(args.getString(4).split(","));
-        String where = blank(args, 5) ? null : args.getString(5);
-        String options = args.isNullAt(6) ? null : args.getString(6);
+                        : Arrays.asList(args.getString(5).split(","));
+        String where = blank(args, 6) ? null : args.getString(6);
+        String options = args.isNullAt(7) ? null : args.getString(7);
         Duration partitionIdleTime =
-                blank(args, 7) ? null : TimeUtils.parseDuration(args.getString(7));
+                blank(args, 8) ? null : TimeUtils.parseDuration(args.getString(8));
         if (OrderType.NONE.name().equals(sortType) && !sortColumns.isEmpty()) {
             throw new IllegalArgumentException(
                     "order_strategy \"none\" cannot work with order_by columns.");
@@ -169,6 +173,12 @@ public class CompactProcedure extends BaseProcedure {
                     String.format(
                             "The compact strategy only supports 'full' or 'minor', but '%s' is configured.",
                             compactStrategy));
+        }
+
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            checkArgument(
+                    compactStrategy.equalsIgnoreCase(FULL),
+                    "The compact strategy must be full when triggering external compact.");
         }
 
         checkArgument(
@@ -208,6 +218,7 @@ public class CompactProcedure extends BaseProcedure {
                                     execute(
                                             (FileStoreTable) table,
                                             compactStrategy,
+                                            externalScheme,
                                             sortType,
                                             sortColumns,
                                             relation,
@@ -229,6 +240,7 @@ public class CompactProcedure extends BaseProcedure {
     private boolean execute(
             FileStoreTable table,
             String compactStrategy,
+            String externalScheme,
             String sortType,
             List<String> sortColumns,
             DataSourceV2Relation relation,
@@ -237,6 +249,24 @@ public class CompactProcedure extends BaseProcedure {
         BucketMode bucketMode = table.bucketMode();
         OrderType orderType = OrderType.of(sortType);
         boolean fullCompact = compactStrategy.equalsIgnoreCase(FULL);
+        List<Path> externalPaths = new ArrayList<>();
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            checkArgument(
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).length() > 1,
+                    "When external_scheme configured, table must have at least one external path.");
+            for (String pathString :
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).split(",")) {
+                Path path = new Path(pathString.trim());
+                String scheme = path.toUri().getScheme();
+                if (scheme == null) {
+                    throw new IllegalArgumentException("scheme should not be null: " + path);
+                }
+
+                if (scheme.equalsIgnoreCase(externalScheme)) {
+                    externalPaths.add(path);
+                }
+            }
+        }
         Predicate filter =
                 condition == null
                         ? null
@@ -252,7 +282,12 @@ public class CompactProcedure extends BaseProcedure {
                 case HASH_FIXED:
                 case HASH_DYNAMIC:
                     compactAwareBucketTable(
-                            table, fullCompact, filter, partitionIdleTime, javaSparkContext);
+                            table,
+                            fullCompact,
+                            externalPaths,
+                            filter,
+                            partitionIdleTime,
+                            javaSparkContext);
                     break;
                 case BUCKET_UNAWARE:
                     compactUnAwareBucketTable(table, filter, partitionIdleTime, javaSparkContext);
@@ -279,6 +314,7 @@ public class CompactProcedure extends BaseProcedure {
     private void compactAwareBucketTable(
             FileStoreTable table,
             boolean fullCompact,
+            List<Path> externalPaths,
             @Nullable Predicate filter,
             @Nullable Duration partitionIdleTime,
             JavaSparkContext javaSparkContext) {
@@ -324,7 +360,8 @@ public class CompactProcedure extends BaseProcedure {
                                                             SerializationUtils.deserializeBinaryRow(
                                                                     pair.getLeft()),
                                                             pair.getRight(),
-                                                            fullCompact);
+                                                            fullCompact,
+                                                            externalPaths);
                                                 }
                                                 CommitMessageSerializer serializer =
                                                         new CommitMessageSerializer();

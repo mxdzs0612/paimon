@@ -20,6 +20,7 @@ package org.apache.paimon.mergetree.compact;
 
 import org.apache.paimon.compact.CompactUnit;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.RecordLevelExpire;
 import org.apache.paimon.mergetree.LevelSortedRun;
@@ -55,6 +56,7 @@ public interface CompactStrategy {
             int numLevels,
             List<LevelSortedRun> runs,
             @Nullable RecordLevelExpire recordLevelExpire,
+            List<Path> externalPaths,
             @Nullable DeletionVectorsMaintainer dvMaintainer) {
         int maxLevel = numLevels - 1;
         if (runs.isEmpty()) {
@@ -64,7 +66,10 @@ public interface CompactStrategy {
             List<DataFileMeta> filesToBeCompacted = new ArrayList<>();
 
             for (DataFileMeta file : runs.get(0).run().files()) {
-                if (recordLevelExpire != null && recordLevelExpire.isExpireFile(file)) {
+                if (!externalPaths.isEmpty()) {
+                    // add all files when its externalCompaction
+                    filesToBeCompacted.add(file);
+                } else if (recordLevelExpire != null && recordLevelExpire.isExpireFile(file)) {
                     // check record level expire for large files
                     filesToBeCompacted.add(file);
                 } else if (dvMaintainer != null
@@ -89,12 +94,13 @@ public interface CompactStrategy {
             }
 
             if (!filesToBeCompacted.isEmpty()) {
-                return Optional.of(CompactUnit.fromFiles(maxLevel, filesToBeCompacted));
+                return Optional.of(
+                        CompactUnit.fromFiles(maxLevel, filesToBeCompacted, externalPaths));
             } else {
                 return Optional.empty();
             }
         } else {
-            return Optional.of(CompactUnit.fromLevelRuns(maxLevel, runs));
+            return Optional.of(CompactUnit.fromLevelRuns(maxLevel, runs, externalPaths));
         }
     }
 }

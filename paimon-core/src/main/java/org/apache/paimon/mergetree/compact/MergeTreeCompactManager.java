@@ -26,6 +26,7 @@ import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.compact.CompactUnit;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.RecordLevelExpire;
 import org.apache.paimon.mergetree.LevelSortedRun;
@@ -120,9 +121,13 @@ public class MergeTreeCompactManager extends CompactFutureManager {
     }
 
     @Override
-    public void triggerCompaction(boolean fullCompaction) {
+    public void triggerCompaction(boolean fullCompaction, List<Path> externalPaths) {
         Optional<CompactUnit> optionalUnit;
         List<LevelSortedRun> runs = levels.levelSortedRuns();
+        if (!externalPaths.isEmpty()) {
+            Preconditions.checkState(
+                    fullCompaction, "External compaction must be a full compaction.");
+        }
         if (fullCompaction) {
             Preconditions.checkState(
                     taskFuture == null,
@@ -135,7 +140,11 @@ public class MergeTreeCompactManager extends CompactFutureManager {
             }
             optionalUnit =
                     CompactStrategy.pickFullCompaction(
-                            levels.numberOfLevels(), runs, recordLevelExpire, dvMaintainer);
+                            levels.numberOfLevels(),
+                            runs,
+                            recordLevelExpire,
+                            externalPaths,
+                            dvMaintainer);
         } else {
             if (taskFuture != null) {
                 return;

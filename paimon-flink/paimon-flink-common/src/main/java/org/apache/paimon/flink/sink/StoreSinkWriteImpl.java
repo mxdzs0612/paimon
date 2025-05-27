@@ -23,6 +23,7 @@ import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.disk.IOManagerImpl;
 import org.apache.paimon.flink.metrics.FlinkMetricRegistry;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.memory.HeapMemorySegmentPool;
 import org.apache.paimon.memory.MemoryPoolFactory;
@@ -202,8 +203,10 @@ public class StoreSinkWriteImpl implements StoreSinkWrite {
     }
 
     @Override
-    public void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception {
-        write.compact(partition, bucket, fullCompaction);
+    public void compact(
+            BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception {
+        write.compact(partition, bucket, fullCompaction, externalPaths);
     }
 
     @Override

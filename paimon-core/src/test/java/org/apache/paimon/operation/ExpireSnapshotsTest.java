@@ -563,7 +563,7 @@ public class ExpireSnapshotsTest {
         FileStoreTestUtils.assertPathExists(fileIO, dataFilePath1);
 
         // compact & commit
-        writer.compact(true);
+        writer.compact(true, new ArrayList<>());
         writer.sync();
         FileStoreTestUtils.commitData(store, 1, writers);
 

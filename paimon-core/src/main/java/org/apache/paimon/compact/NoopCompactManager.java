@@ -19,6 +19,7 @@
 package org.apache.paimon.compact;
 
 import org.apache.paimon.CoreOptions;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.utils.Preconditions;
 
@@ -52,7 +53,7 @@ public class NoopCompactManager implements CompactManager {
     }
 
     @Override
-    public void triggerCompaction(boolean fullCompaction) {
+    public void triggerCompaction(boolean fullCompaction, List<Path> externalPaths) {
         Preconditions.checkArgument(
                 !fullCompaction,
                 "NoopCompactManager does not support user triggered compaction.\n"

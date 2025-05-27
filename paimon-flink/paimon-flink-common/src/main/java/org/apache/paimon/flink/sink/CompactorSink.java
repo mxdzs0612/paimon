@@ -31,15 +31,19 @@ public class CompactorSink extends FlinkSink<RowData> {
 
     private final boolean fullCompaction;
 
-    public CompactorSink(FileStoreTable table, boolean fullCompaction) {
+    private final String externalScheme;
+
+    public CompactorSink(FileStoreTable table, boolean fullCompaction, String externalScheme) {
         super(table, false);
         this.fullCompaction = fullCompaction;
+        this.externalScheme = externalScheme;
     }
 
     @Override
     protected OneInputStreamOperatorFactory<RowData, Committable> createWriteOperatorFactory(
             StoreSinkWrite.Provider writeProvider, String commitUser) {
-        return new StoreCompactOperator.Factory(table, writeProvider, commitUser, fullCompaction);
+        return new StoreCompactOperator.Factory(
+                table, writeProvider, commitUser, fullCompaction, externalScheme);
     }
 
     @Override

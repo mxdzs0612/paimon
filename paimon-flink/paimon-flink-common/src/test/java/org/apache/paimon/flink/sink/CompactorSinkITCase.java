@@ -133,7 +133,7 @@ public class CompactorSinkITCase extends AbstractTestBase {
                         .withContinuousMode(false)
                         .withPartitionPredicate(predicate)
                         .build();
-        new CompactorSinkBuilder(table, true).withInput(source).build();
+        new CompactorSinkBuilder(table, true, "").withInput(source).build();
         env.execute();
 
         snapshot = snapshotManager.snapshot(snapshotManager.latestSnapshotId());
@@ -183,7 +183,8 @@ public class CompactorSinkITCase extends AbstractTestBase {
                                                 String.valueOf(sinkParalellism));
                                     }
                                 }),
-                        false)
+                        false,
+                        "")
                 .withInput(source)
                 .build();
 
@@ -270,7 +271,8 @@ public class CompactorSinkITCase extends AbstractTestBase {
                                 memoryPool,
                                 metricGroup),
                 "test",
-                true);
+                true,
+                null);
     }
 
     protected MultiTablesStoreCompactOperator.Factory createMultiTablesCompactOperator(
@@ -282,6 +284,7 @@ public class CompactorSinkITCase extends AbstractTestBase {
                 false,
                 false,
                 true,
+                null,
                 new Options());
     }
 

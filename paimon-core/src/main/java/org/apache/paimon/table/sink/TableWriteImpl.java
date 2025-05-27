@@ -23,6 +23,7 @@ import org.apache.paimon.annotation.VisibleForTesting;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.BundleRecords;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.memory.MemoryPoolFactory;
@@ -226,8 +227,10 @@ public class TableWriteImpl<T> implements InnerTableWrite, Restorable<List<State
     }
 
     @Override
-    public void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception {
-        write.compact(partition, bucket, fullCompaction);
+    public void compact(
+            BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception {
+        write.compact(partition, bucket, fullCompaction, externalPaths);
     }
 
     @Override

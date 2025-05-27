@@ -74,6 +74,8 @@ public class CompactDatabaseAction extends ActionBase {
 
     private Boolean fullCompaction;
 
+    private String externalScheme;
+
     private boolean isStreaming;
 
     public CompactDatabaseAction(Map<String, String> catalogConfig) {
@@ -116,6 +118,11 @@ public class CompactDatabaseAction extends ActionBase {
 
     public CompactDatabaseAction withFullCompaction(boolean fullCompaction) {
         this.fullCompaction = fullCompaction;
+        return this;
+    }
+
+    public CompactDatabaseAction withExternalCompaction(String externalScheme) {
+        this.externalScheme = externalScheme;
         return this;
     }
 
@@ -242,7 +249,8 @@ public class CompactDatabaseAction extends ActionBase {
                                 .buildForUnawareBucketsTableSource(),
                         parallelism);
 
-        new CombinedTableCompactorSink(catalogLoader(), tableOptions, fullCompaction)
+        new CombinedTableCompactorSink(
+                        catalogLoader(), tableOptions, fullCompaction, externalScheme)
                 .sinkFrom(awareBucketTableSource, unawareBucketTableSource);
     }
 
@@ -269,7 +277,8 @@ public class CompactDatabaseAction extends ActionBase {
         CompactorSourceBuilder sourceBuilder =
                 new CompactorSourceBuilder(fullName, table)
                         .withPartitionIdleTime(partitionIdleTime);
-        CompactorSinkBuilder sinkBuilder = new CompactorSinkBuilder(table, fullCompaction);
+        CompactorSinkBuilder sinkBuilder =
+                new CompactorSinkBuilder(table, fullCompaction, externalScheme);
 
         DataStreamSource<RowData> source =
                 sourceBuilder.withEnv(env).withContinuousMode(isStreaming).build();

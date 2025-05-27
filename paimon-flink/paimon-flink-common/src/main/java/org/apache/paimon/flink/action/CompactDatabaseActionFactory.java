@@ -18,6 +18,7 @@
 
 package org.apache.paimon.flink.action;
 
+import org.apache.paimon.utils.StringUtils;
 import org.apache.paimon.utils.TimeUtils;
 
 import java.util.Optional;
@@ -57,6 +58,10 @@ public class CompactDatabaseActionFactory implements ActionFactory {
         String compactStrategy = params.get(COMPACT_STRATEGY);
         if (checkCompactStrategy(compactStrategy)) {
             action.withFullCompaction(compactStrategy.trim().equalsIgnoreCase(FULL));
+        }
+        String externalScheme = params.get(EXTERNAL_SCHEME);
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            action.withFullCompaction(true).withExternalCompaction(externalScheme);
         }
 
         return Optional.of(action);

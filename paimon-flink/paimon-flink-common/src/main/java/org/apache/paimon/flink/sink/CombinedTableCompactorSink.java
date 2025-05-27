@@ -60,14 +60,19 @@ public class CombinedTableCompactorSink implements Serializable {
     private final CatalogLoader catalogLoader;
     private final boolean ignorePreviousFiles;
     private final boolean fullCompaction;
+    private final String externalScheme;
 
     private final Options options;
 
     public CombinedTableCompactorSink(
-            CatalogLoader catalogLoader, Options options, boolean fullCompaction) {
+            CatalogLoader catalogLoader,
+            Options options,
+            boolean fullCompaction,
+            String externalScheme) {
         this.catalogLoader = catalogLoader;
         this.ignorePreviousFiles = false;
         this.fullCompaction = fullCompaction;
+        this.externalScheme = externalScheme;
         this.options = options;
     }
 
@@ -112,6 +117,7 @@ public class CombinedTableCompactorSink implements Serializable {
                                 env.getCheckpointConfig(),
                                 isStreaming,
                                 fullCompaction,
+                                externalScheme,
                                 commitUser));
         forwardParallelism(multiBucketTableRewriter, awareBucketTableSource);
 
@@ -179,6 +185,7 @@ public class CombinedTableCompactorSink implements Serializable {
                     CheckpointConfig checkpointConfig,
                     boolean isStreaming,
                     boolean fullCompaction,
+                    String externalScheme,
                     String commitUser) {
         return new MultiTablesStoreCompactOperator.Factory(
                 catalogLoader,
@@ -187,6 +194,7 @@ public class CombinedTableCompactorSink implements Serializable {
                 isStreaming,
                 ignorePreviousFiles,
                 fullCompaction,
+                externalScheme,
                 options);
     }
 

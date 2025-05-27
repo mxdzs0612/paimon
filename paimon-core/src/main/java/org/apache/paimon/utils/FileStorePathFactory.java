@@ -30,6 +30,7 @@ import org.apache.paimon.types.RowType;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -157,6 +158,11 @@ public class FileStorePathFactory {
     }
 
     public DataFilePathFactory createDataFilePathFactory(BinaryRow partition, int bucket) {
+        return createDataFilePathFactory(partition, bucket, new ArrayList<>());
+    }
+
+    public DataFilePathFactory createDataFilePathFactory(
+            BinaryRow partition, int bucket, List<Path> externalPaths) {
         return new DataFilePathFactory(
                 bucketPath(partition, bucket),
                 formatIdentifier,
@@ -164,16 +170,20 @@ public class FileStorePathFactory {
                 changelogFilePrefix,
                 fileSuffixIncludeCompression,
                 fileCompression,
-                createExternalPathProvider(partition, bucket));
+                createExternalPathProvider(partition, bucket, externalPaths));
     }
 
     @Nullable
-    private ExternalPathProvider createExternalPathProvider(BinaryRow partition, int bucket) {
-        if (externalPaths == null || externalPaths.isEmpty()) {
+    private ExternalPathProvider createExternalPathProvider(
+            BinaryRow partition, int bucket, List<Path> externalPaths) {
+        if (!externalPaths.isEmpty()) {
+            return new ExternalPathProvider(externalPaths, relativeBucketPath(partition, bucket));
+        }
+        if (this.externalPaths == null || this.externalPaths.isEmpty()) {
             return null;
         }
 
-        return new ExternalPathProvider(externalPaths, relativeBucketPath(partition, bucket));
+        return new ExternalPathProvider(this.externalPaths, relativeBucketPath(partition, bucket));
     }
 
     public List<Path> getExternalPaths() {

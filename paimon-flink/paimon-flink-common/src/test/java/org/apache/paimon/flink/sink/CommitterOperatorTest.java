@@ -708,10 +708,10 @@ public class CommitterOperatorTest extends CommitterOperatorTestBase {
         cpId = 2;
         write.write(GenericRow.of(1, 101L));
         // just flush the writer
-        write.compact(BinaryRow.EMPTY_ROW, 0, false);
+        write.compact(BinaryRow.EMPTY_ROW, 0, false, new ArrayList<>());
         write.write(GenericRow.of(2, 200L));
         // real compaction
-        write.compact(BinaryRow.EMPTY_ROW, 0, true);
+        write.compact(BinaryRow.EMPTY_ROW, 0, true, new ArrayList<>());
         testHarness.processElement(
                 new Committable(
                         cpId, Committable.Kind.FILE, write.prepareCommit(true, cpId).get(0)),

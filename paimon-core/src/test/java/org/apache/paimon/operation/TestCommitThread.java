@@ -183,7 +183,7 @@ public class TestCommitThread extends Thread {
                 for (BinaryRow partition : writtenPartitions) {
                     MergeTreeWriter writer =
                             writers.computeIfAbsent(partition, p -> createWriter(p, false));
-                    writer.compact(true);
+                    writer.compact(true, new ArrayList<>());
                     CommitIncrement inc = writer.prepareCommit(true);
                     committable.addFileCommittable(
                             new CommitMessageImpl(

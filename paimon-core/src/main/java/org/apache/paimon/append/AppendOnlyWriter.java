@@ -29,6 +29,7 @@ import org.apache.paimon.disk.RowBuffer;
 import org.apache.paimon.fileindex.FileIndexOptions;
 import org.apache.paimon.format.FileFormat;
 import org.apache.paimon.fs.FileIO;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.BundleRecords;
 import org.apache.paimon.io.CompactIncrement;
 import org.apache.paimon.io.DataFileMeta;
@@ -160,7 +161,7 @@ public class AppendOnlyWriter implements BatchRecordWriter, MemoryOwner {
                 rowData.getRowKind());
         boolean success = sinkWriter.write(rowData);
         if (!success) {
-            flush(false, false);
+            flush(false, false, new ArrayList<>());
             success = sinkWriter.write(rowData);
             if (!success) {
                 // Should not get here, because writeBuffer will throw too big exception out.
@@ -183,8 +184,8 @@ public class AppendOnlyWriter implements BatchRecordWriter, MemoryOwner {
     }
 
     @Override
-    public void compact(boolean fullCompaction) throws Exception {
-        flush(true, fullCompaction);
+    public void compact(boolean fullCompaction, List<Path> externalPaths) throws Exception {
+        flush(true, fullCompaction, externalPaths);
     }
 
     @Override
@@ -204,25 +205,27 @@ public class AppendOnlyWriter implements BatchRecordWriter, MemoryOwner {
 
     @Override
     public CommitIncrement prepareCommit(boolean waitCompaction) throws Exception {
-        flush(false, false);
+        flush(false, false, new ArrayList<>());
         trySyncLatestCompaction(waitCompaction || forceCompact);
         return drainIncrement();
     }
 
     @Override
     public boolean compactNotCompleted() {
-        compactManager.triggerCompaction(false);
+        compactManager.triggerCompaction(false, new ArrayList<>());
         return compactManager.compactNotCompleted();
     }
 
     @VisibleForTesting
-    void flush(boolean waitForLatestCompaction, boolean forcedFullCompaction) throws Exception {
+    void flush(
+            boolean waitForLatestCompaction, boolean forcedFullCompaction, List<Path> externalPaths)
+            throws Exception {
         List<DataFileMeta> flushedFiles = sinkWriter.flush();
 
         // add new generated files
         flushedFiles.forEach(compactManager::addNewFile);
         trySyncLatestCompaction(waitForLatestCompaction);
-        compactManager.triggerCompaction(forcedFullCompaction);
+        compactManager.triggerCompaction(forcedFullCompaction, externalPaths);
         newFiles.addAll(flushedFiles);
     }
 
@@ -352,7 +355,7 @@ public class AppendOnlyWriter implements BatchRecordWriter, MemoryOwner {
     public void flushMemory() throws Exception {
         boolean success = sinkWriter.flushMemory();
         if (!success) {
-            flush(false, false);
+            flush(false, false, new ArrayList<>());
         }
     }
 

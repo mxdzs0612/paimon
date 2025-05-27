@@ -30,6 +30,7 @@ import org.apache.paimon.utils.SnapshotManager;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -55,13 +56,13 @@ public class IncrementalDeltaStartingScannerTest extends ScannerTestBase {
         write.write(rowData(1, 10, 100L));
         write.write(rowData(2, 20, 200L));
         write.write(rowData(3, 40, 400L));
-        write.compact(binaryRow(1), 0, false);
+        write.compact(binaryRow(1), 0, false, new ArrayList<>());
         commit.commit(0, write.prepareCommit(true, 0));
 
         write.write(rowData(1, 10, 100L));
         write.write(rowData(2, 20, 200L));
         write.write(rowData(3, 40, 500L));
-        write.compact(binaryRow(1), 0, false);
+        write.compact(binaryRow(1), 0, false, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         write.close();
@@ -97,13 +98,13 @@ public class IncrementalDeltaStartingScannerTest extends ScannerTestBase {
         write.write(rowData(1, 10, 100L));
         write.write(rowData(2, 20, 200L));
         write.write(rowData(3, 40, 400L));
-        write.compact(binaryRow(1), 0, false);
+        write.compact(binaryRow(1), 0, false, new ArrayList<>());
         commit.commit(0, write.prepareCommit(true, 0));
 
         write.write(rowData(1, 10, 100L));
         write.write(rowData(2, 20, 200L));
         write.write(rowData(3, 40, 500L));
-        write.compact(binaryRow(1), 0, false);
+        write.compact(binaryRow(1), 0, false, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         write.close();

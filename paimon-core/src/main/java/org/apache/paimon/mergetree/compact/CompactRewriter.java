@@ -19,6 +19,7 @@
 package org.apache.paimon.mergetree.compact;
 
 import org.apache.paimon.compact.CompactResult;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.mergetree.SortedRun;
 
@@ -36,10 +37,15 @@ public interface CompactRewriter extends Closeable {
      *     MergeTreeCompactManager#triggerCompaction}
      * @param sections list of sections (section is a list of {@link SortedRun}s, and key intervals
      *     between sections do not overlap)
+     * @param externalPaths external compact paths location
      * @return compaction result
      * @throws Exception exception
      */
-    CompactResult rewrite(int outputLevel, boolean dropDelete, List<List<SortedRun>> sections)
+    CompactResult rewrite(
+            int outputLevel,
+            boolean dropDelete,
+            List<List<SortedRun>> sections,
+            List<Path> externalPaths)
             throws Exception;
 
     /**

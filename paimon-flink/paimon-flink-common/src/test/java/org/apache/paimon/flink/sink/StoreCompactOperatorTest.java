@@ -22,6 +22,7 @@ import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.GenericRow;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.flink.FlinkRowData;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.TableTestBase;
@@ -57,7 +58,8 @@ public class StoreCompactOperatorTest extends TableTestBase {
                         (table, commitUser, state, ioManager, memoryPool, metricGroup) ->
                                 compactRememberStoreWrite,
                         "10086",
-                        !streamingMode);
+                        !streamingMode,
+                        "");
 
         TypeSerializer<Committable> serializer =
                 new CommittableTypeInfo().createSerializer(new ExecutionConfig());
@@ -123,7 +125,8 @@ public class StoreCompactOperatorTest extends TableTestBase {
         }
 
         @Override
-        public void compact(BinaryRow partition, int bucket, boolean fullCompaction) {
+        public void compact(
+                BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths) {
             compactTime++;
         }
 

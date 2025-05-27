@@ -24,6 +24,7 @@ import org.apache.paimon.compact.CompactTask;
 import org.apache.paimon.compact.CompactUnit;
 import org.apache.paimon.data.InternalRow;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.RecordLevelExpire;
 import org.apache.paimon.mergetree.SortedRun;
@@ -57,6 +58,8 @@ public class MergeTreeCompactTask extends CompactTask {
     @Nullable private final RecordLevelExpire recordLevelExpire;
     @Nullable private final DeletionVectorsMaintainer dvMaintainer;
 
+    private final List<Path> externalPaths;
+
     public MergeTreeCompactTask(
             Comparator<InternalRow> keyComparator,
             long minFileSize,
@@ -78,6 +81,7 @@ public class MergeTreeCompactTask extends CompactTask {
         this.dropDelete = dropDelete;
         this.maxLevel = maxLevel;
         this.recordLevelExpire = recordLevelExpire;
+        this.externalPaths = unit.externalPaths();
 
         this.upgradeFilesNum = 0;
     }
@@ -127,22 +131,24 @@ public class MergeTreeCompactTask extends CompactTask {
     private void upgrade(DataFileMeta file, CompactResult toUpdate) throws Exception {
         if (file.level() == outputLevel) {
             if (isContainExpiredRecords(file)
+                    || !externalPaths.isEmpty()
                     || (dvMaintainer != null
                             && dvMaintainer.deletionVectorOf(file.fileName()).isPresent())) {
                 /*
                  * 1. if the large file in maxLevel has expired records, we need to rewrite it.
-                 * 2. if the large file in maxLevel has corresponding deletion vector, we need to rewrite it.
+                 * 2. if it is an external compact, we need to rewrite all records.
+                 * 3. if the large file in maxLevel has corresponding deletion vector, we need to rewrite it.
                  */
-                rewriteFile(file, toUpdate);
+                rewriteFile(file, toUpdate, externalPaths);
             }
             return;
         }
 
         if (outputLevel != maxLevel || file.deleteRowCount().map(d -> d == 0).orElse(false)) {
-            if (isContainExpiredRecords(file)) {
+            if (isContainExpiredRecords(file) || !externalPaths.isEmpty()) {
                 // if the file which could be directly upgraded has expired records, we need to
                 // rewrite it
-                rewriteFile(file, toUpdate);
+                rewriteFile(file, toUpdate, externalPaths);
             } else {
                 CompactResult upgradeResult = rewriter.upgrade(outputLevel, file);
                 toUpdate.merge(upgradeResult);
@@ -170,21 +176,28 @@ public class MergeTreeCompactTask extends CompactTask {
                 return;
             }
         }
-        rewriteImpl(candidate, toUpdate);
+        rewriteImpl(candidate, toUpdate, externalPaths);
     }
 
-    private void rewriteImpl(List<List<SortedRun>> candidate, CompactResult toUpdate)
+    private void rewriteImpl(
+            List<List<SortedRun>> candidate, CompactResult toUpdate, List<Path> externalPaths)
             throws Exception {
-        CompactResult rewriteResult = rewriter.rewrite(outputLevel, dropDelete, candidate);
+        CompactResult rewriteResult =
+                rewriter.rewrite(outputLevel, dropDelete, candidate, externalPaths);
         toUpdate.merge(rewriteResult);
         candidate.clear();
     }
 
     private void rewriteFile(DataFileMeta file, CompactResult toUpdate) throws Exception {
+        rewriteFile(file, toUpdate, new ArrayList<>());
+    }
+
+    private void rewriteFile(DataFileMeta file, CompactResult toUpdate, List<Path> externalPaths)
+            throws Exception {
         List<List<SortedRun>> candidate = new ArrayList<>();
         candidate.add(new ArrayList<>());
         candidate.get(0).add(SortedRun.fromSingle(file));
-        rewriteImpl(candidate, toUpdate);
+        rewriteImpl(candidate, toUpdate, externalPaths);
     }
 
     private boolean isContainExpiredRecords(DataFileMeta file) {

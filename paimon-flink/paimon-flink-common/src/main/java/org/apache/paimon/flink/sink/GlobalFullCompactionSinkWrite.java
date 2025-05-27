@@ -21,6 +21,7 @@ package org.apache.paimon.flink.sink;
 import org.apache.paimon.Snapshot;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.memory.MemorySegmentPool;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.sink.SinkRecord;
@@ -128,8 +129,10 @@ public class GlobalFullCompactionSinkWrite extends StoreSinkWriteImpl {
     }
 
     @Override
-    public void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception {
-        super.compact(partition, bucket, fullCompaction);
+    public void compact(
+            BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception {
+        super.compact(partition, bucket, fullCompaction, externalPaths);
         touchBucket(partition, bucket);
     }
 
@@ -233,7 +236,7 @@ public class GlobalFullCompactionSinkWrite extends StoreSinkWriteImpl {
                         }
                         compactedBuckets.add(bucket);
                         try {
-                            write.compact(bucket.f0, bucket.f1, true);
+                            write.compact(bucket.f0, bucket.f1, true, new ArrayList<>());
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }

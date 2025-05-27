@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -184,7 +185,7 @@ public class StartupModeTest extends ScannerTestBase {
         initializeTable(StartupMode.COMPACTED_FULL);
         initializeTestData(); // initialize 3 commits
 
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
         writeAndCommit(5, rowData(1, 10, 103L));
 

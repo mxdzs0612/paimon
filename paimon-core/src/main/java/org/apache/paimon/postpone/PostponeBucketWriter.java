@@ -19,6 +19,7 @@
 package org.apache.paimon.postpone;
 
 import org.apache.paimon.KeyValue;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.CompactIncrement;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.DataIncrement;
@@ -63,7 +64,7 @@ public class PostponeBucketWriter implements RecordWriter<KeyValue> {
     }
 
     @Override
-    public void compact(boolean fullCompaction) throws Exception {}
+    public void compact(boolean fullCompaction, List<Path> externalPaths) throws Exception {}
 
     @Override
     public void addNewFiles(List<DataFileMeta> files) {

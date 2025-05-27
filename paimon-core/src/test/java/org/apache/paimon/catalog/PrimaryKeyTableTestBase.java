@@ -104,7 +104,7 @@ public abstract class PrimaryKeyTableTestBase {
     protected void compact(int partition) throws Exception {
         BatchWriteBuilder writeBuilder = table.newBatchWriteBuilder();
         BatchTableWrite write = writeBuilder.newWrite();
-        write.compact(BinaryRow.singleColumn(partition), 0, true);
+        write.compact(BinaryRow.singleColumn(partition), 0, true, new ArrayList<>());
         writeBuilder.newCommit().commit(write.prepareCommit());
         write.close();
     }

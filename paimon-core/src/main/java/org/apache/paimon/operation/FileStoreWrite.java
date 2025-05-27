@@ -22,6 +22,7 @@ import org.apache.paimon.FileStore;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.deletionvectors.DeletionVectorsMaintainer;
 import org.apache.paimon.disk.IOManager;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.index.IndexMaintainer;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.memory.MemoryPoolFactory;
@@ -121,9 +122,11 @@ public interface FileStoreWrite<T> extends Restorable<List<FileStoreWrite.State<
      * @param partition the partition to compact
      * @param bucket the bucket to compact
      * @param fullCompaction whether to trigger full compaction or just normal compaction
+     * @param externalPaths list of paths external compaction aims to
      * @throws Exception the thrown exception when compacting the records
      */
-    void compact(BinaryRow partition, int bucket, boolean fullCompaction) throws Exception;
+    void compact(BinaryRow partition, int bucket, boolean fullCompaction, List<Path> externalPaths)
+            throws Exception;
 
     /**
      * Notify that some new files are created at given snapshot in given bucket.

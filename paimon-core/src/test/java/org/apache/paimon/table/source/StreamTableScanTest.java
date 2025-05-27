@@ -33,6 +33,7 @@ import org.apache.paimon.types.RowKind;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -142,7 +143,7 @@ public class StreamTableScanTest extends ScannerTestBase {
         write.write(rowData(1, 10, 101L));
         write.write(rowData(1, 30, 300L));
         write.write(rowDataWithKind(RowKind.DELETE, 1, 40, 400L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(1, write.prepareCommit(true, 1));
 
         // some more records
@@ -169,7 +170,7 @@ public class StreamTableScanTest extends ScannerTestBase {
         // no new compact snapshots, should return empty plan
         assertThat(scan.plan().splits()).isEmpty();
 
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(4, write.prepareCommit(true, 4));
 
         // full compaction done, read new changelog
@@ -186,14 +187,14 @@ public class StreamTableScanTest extends ScannerTestBase {
         write.write(rowDataWithKind(RowKind.DELETE, 1, 10, 0L));
         write.write(rowDataWithKind(RowKind.DELETE, 1, 20, 0L));
         write.write(rowDataWithKind(RowKind.DELETE, 1, 50, 0L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(5, write.prepareCommit(true, 5));
         assertThat(getResult(read, scan.plan().splits()))
                 .hasSameElementsAs(Arrays.asList("-D 1|10|103", "-D 1|20|201", "-D 1|50|500"));
 
         // test value filter to changelog
         write.write(rowData(1, 60, 600L));
-        write.compact(binaryRow(1), 0, true);
+        write.compact(binaryRow(1), 0, true, new ArrayList<>());
         commit.commit(6, write.prepareCommit(true, 6));
         assertThat(getResult(read, scan.plan().splits())).isEmpty();
 

@@ -693,7 +693,10 @@ public abstract class MergeTreeTestBase {
 
         @Override
         public CompactResult rewrite(
-                int outputLevel, boolean dropDelete, List<List<SortedRun>> sections)
+                int outputLevel,
+                boolean dropDelete,
+                List<List<SortedRun>> sections,
+                List<Path> externalPaths)
                 throws Exception {
             RollingFileWriter<KeyValue, DataFileMeta> writer =
                     writerFactory.createRollingMergeTreeFileWriter(outputLevel, FileSource.COMPACT);

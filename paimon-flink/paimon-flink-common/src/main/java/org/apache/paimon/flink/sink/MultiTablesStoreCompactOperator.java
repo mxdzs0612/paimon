@@ -24,12 +24,13 @@ import org.apache.paimon.catalog.CatalogLoader;
 import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.flink.utils.RuntimeContextUtils;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.DataFileMetaSerializer;
 import org.apache.paimon.options.Options;
 import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.sink.ChannelComputer;
-import org.apache.paimon.utils.Preconditions;
+import org.apache.paimon.utils.StringUtils;
 
 import org.apache.flink.runtime.state.StateInitializationContext;
 import org.apache.flink.runtime.state.StateSnapshotContext;
@@ -41,14 +42,17 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.data.RowData;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.apache.paimon.CoreOptions.DATA_FILE_EXTERNAL_PATHS;
 import static org.apache.paimon.CoreOptions.FULL_COMPACTION_DELTA_COMMITS;
 import static org.apache.paimon.flink.FlinkConnectorOptions.CHANGELOG_PRODUCER_FULL_COMPACTION_TRIGGER_INTERVAL;
+import static org.apache.paimon.utils.Preconditions.checkArgument;
 import static org.apache.paimon.utils.SerializationUtils.deserializeBinaryRow;
 
 /**
@@ -68,6 +72,7 @@ public class MultiTablesStoreCompactOperator
     private final boolean isStreaming;
     private final boolean ignorePreviousFiles;
     private final boolean fullCompaction;
+    private final String externalScheme;
     private final String initialCommitUser;
 
     private transient StoreSinkWriteState state;
@@ -88,6 +93,7 @@ public class MultiTablesStoreCompactOperator
             boolean isStreaming,
             boolean ignorePreviousFiles,
             boolean fullCompaction,
+            String externalScheme,
             Options options) {
         super(parameters, options);
         this.catalogLoader = catalogLoader;
@@ -96,6 +102,7 @@ public class MultiTablesStoreCompactOperator
         this.isStreaming = isStreaming;
         this.ignorePreviousFiles = ignorePreviousFiles;
         this.fullCompaction = fullCompaction;
+        this.externalScheme = externalScheme;
     }
 
     @Override
@@ -149,7 +156,7 @@ public class MultiTablesStoreCompactOperator
         Identifier tableId = Identifier.create(databaseName, tableName);
         FileStoreTable table = getTable(tableId);
 
-        Preconditions.checkArgument(
+        checkArgument(
                 !table.coreOptions().writeOnly(),
                 CoreOptions.WRITE_ONLY.key()
                         + " should not be true for MultiTablesStoreCompactOperator.");
@@ -169,16 +176,34 @@ public class MultiTablesStoreCompactOperator
                                         memoryPool,
                                         getMetricGroup()));
 
+        List<Path> externalPaths = new ArrayList<>();
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            checkArgument(
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).length() > 1,
+                    "When external_scheme configured, table must have at least one external path.");
+            for (String pathString :
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).split(",")) {
+                Path path = new Path(pathString.trim());
+                String scheme = path.toUri().getScheme();
+                if (scheme == null) {
+                    throw new IllegalArgumentException("scheme should not be null: " + path);
+                }
+
+                if (scheme.equalsIgnoreCase(externalScheme)) {
+                    externalPaths.add(path);
+                }
+            }
+        }
         if (write.streamingMode()) {
             write.notifyNewFiles(snapshotId, partition, bucket, files);
             // The full compact is not supported in streaming mode.
-            write.compact(partition, bucket, false);
+            write.compact(partition, bucket, false, externalPaths);
         } else {
-            Preconditions.checkArgument(
+            checkArgument(
                     files.isEmpty(),
                     "Batch compact job does not concern what files are compacted. "
                             + "They only need to know what buckets are compacted.");
-            write.compact(partition, bucket, fullCompaction);
+            write.compact(partition, bucket, fullCompaction, externalPaths);
         }
     }
 
@@ -332,6 +357,7 @@ public class MultiTablesStoreCompactOperator
         private final boolean isStreaming;
         private final boolean ignorePreviousFiles;
         private final boolean fullCompaction;
+        private final String externalScheme;
         private final String initialCommitUser;
 
         public Factory(
@@ -341,6 +367,7 @@ public class MultiTablesStoreCompactOperator
                 boolean isStreaming,
                 boolean ignorePreviousFiles,
                 boolean fullCompaction,
+                String externalScheme,
                 Options options) {
             super(options);
             this.catalogLoader = catalogLoader;
@@ -349,6 +376,7 @@ public class MultiTablesStoreCompactOperator
             this.isStreaming = isStreaming;
             this.ignorePreviousFiles = ignorePreviousFiles;
             this.fullCompaction = fullCompaction;
+            this.externalScheme = externalScheme;
         }
 
         @Override
@@ -364,6 +392,7 @@ public class MultiTablesStoreCompactOperator
                             isStreaming,
                             ignorePreviousFiles,
                             fullCompaction,
+                            externalScheme,
                             options);
         }
 

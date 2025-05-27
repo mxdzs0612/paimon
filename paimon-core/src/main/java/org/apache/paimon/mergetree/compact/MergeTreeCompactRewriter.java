@@ -21,6 +21,7 @@ package org.apache.paimon.mergetree.compact;
 import org.apache.paimon.KeyValue;
 import org.apache.paimon.compact.CompactResult;
 import org.apache.paimon.data.InternalRow;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.FileReaderFactory;
 import org.apache.paimon.io.KeyValueFileWriterFactory;
@@ -69,14 +70,23 @@ public class MergeTreeCompactRewriter extends AbstractCompactRewriter {
 
     @Override
     public CompactResult rewrite(
-            int outputLevel, boolean dropDelete, List<List<SortedRun>> sections) throws Exception {
-        return rewriteCompaction(outputLevel, dropDelete, sections);
+            int outputLevel,
+            boolean dropDelete,
+            List<List<SortedRun>> sections,
+            List<Path> externalPaths)
+            throws Exception {
+        return rewriteCompaction(outputLevel, dropDelete, sections, externalPaths);
     }
 
     protected CompactResult rewriteCompaction(
-            int outputLevel, boolean dropDelete, List<List<SortedRun>> sections) throws Exception {
+            int outputLevel,
+            boolean dropDelete,
+            List<List<SortedRun>> sections,
+            List<Path> externalPaths)
+            throws Exception {
         RollingFileWriter<KeyValue, DataFileMeta> writer =
-                writerFactory.createRollingMergeTreeFileWriter(outputLevel, FileSource.COMPACT);
+                writerFactory.createRollingMergeTreeFileWriter(
+                        outputLevel, FileSource.COMPACT, externalPaths);
         RecordReader<KeyValue> reader = null;
         Exception collectedExceptions = null;
         try {

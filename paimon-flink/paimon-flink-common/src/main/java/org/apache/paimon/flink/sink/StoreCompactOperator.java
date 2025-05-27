@@ -22,6 +22,7 @@ import org.apache.paimon.CoreOptions;
 import org.apache.paimon.annotation.VisibleForTesting;
 import org.apache.paimon.data.BinaryRow;
 import org.apache.paimon.flink.utils.RuntimeContextUtils;
+import org.apache.paimon.fs.Path;
 import org.apache.paimon.io.DataFileMeta;
 import org.apache.paimon.io.DataFileMetaSerializer;
 import org.apache.paimon.options.Options;
@@ -29,6 +30,7 @@ import org.apache.paimon.table.FileStoreTable;
 import org.apache.paimon.table.sink.ChannelComputer;
 import org.apache.paimon.utils.Pair;
 import org.apache.paimon.utils.Preconditions;
+import org.apache.paimon.utils.StringUtils;
 
 import org.apache.flink.runtime.state.StateInitializationContext;
 import org.apache.flink.runtime.state.StateSnapshotContext;
@@ -41,10 +43,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.paimon.CoreOptions.DATA_FILE_EXTERNAL_PATHS;
+import static org.apache.paimon.utils.Preconditions.checkArgument;
 import static org.apache.paimon.utils.SerializationUtils.deserializeBinaryRow;
 
 /**
@@ -62,6 +67,7 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
     private final StoreSinkWrite.Provider storeSinkWriteProvider;
     private final String initialCommitUser;
     private final boolean fullCompaction;
+    private final List<Path> externalPaths;
 
     private transient StoreSinkWriteState state;
     private transient StoreSinkWrite write;
@@ -73,7 +79,8 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
             FileStoreTable table,
             StoreSinkWrite.Provider storeSinkWriteProvider,
             String initialCommitUser,
-            boolean fullCompaction) {
+            boolean fullCompaction,
+            String externalScheme) {
         super(parameters, Options.fromMap(table.options()));
         Preconditions.checkArgument(
                 !table.coreOptions().writeOnly(),
@@ -82,6 +89,25 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
         this.storeSinkWriteProvider = storeSinkWriteProvider;
         this.initialCommitUser = initialCommitUser;
         this.fullCompaction = fullCompaction;
+        List<Path> externalPaths = new ArrayList<>();
+        if (!StringUtils.isNullOrWhitespaceOnly(externalScheme)) {
+            checkArgument(
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).length() > 1,
+                    "When external_scheme configured, table must have at least one external path.");
+            for (String pathString :
+                    table.options().get(DATA_FILE_EXTERNAL_PATHS.key()).split(",")) {
+                Path path = new Path(pathString.trim());
+                String scheme = path.toUri().getScheme();
+                if (scheme == null) {
+                    throw new IllegalArgumentException("scheme should not be null: " + path);
+                }
+
+                if (scheme.equalsIgnoreCase(externalScheme)) {
+                    externalPaths.add(path);
+                }
+            }
+        }
+        this.externalPaths = externalPaths;
     }
 
     @Override
@@ -161,7 +187,11 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
 
         try {
             for (Pair<BinaryRow, Integer> partitionBucket : waitToCompact) {
-                write.compact(partitionBucket.getKey(), partitionBucket.getRight(), fullCompaction);
+                write.compact(
+                        partitionBucket.getKey(),
+                        partitionBucket.getRight(),
+                        fullCompaction,
+                        externalPaths);
             }
         } catch (Exception e) {
             throw new RuntimeException("Exception happens while executing compaction.", e);
@@ -194,12 +224,14 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
         private final StoreSinkWrite.Provider storeSinkWriteProvider;
         private final String initialCommitUser;
         private final boolean fullCompaction;
+        private final String externalScheme;
 
         public Factory(
                 FileStoreTable table,
                 StoreSinkWrite.Provider storeSinkWriteProvider,
                 String initialCommitUser,
-                boolean fullCompaction) {
+                boolean fullCompaction,
+                String externalScheme) {
             super(Options.fromMap(table.options()));
             Preconditions.checkArgument(
                     !table.coreOptions().writeOnly(),
@@ -208,6 +240,7 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
             this.storeSinkWriteProvider = storeSinkWriteProvider;
             this.initialCommitUser = initialCommitUser;
             this.fullCompaction = fullCompaction;
+            this.externalScheme = externalScheme;
         }
 
         @Override
@@ -220,7 +253,8 @@ public class StoreCompactOperator extends PrepareCommitOperator<RowData, Committ
                             table,
                             storeSinkWriteProvider,
                             initialCommitUser,
-                            fullCompaction);
+                            fullCompaction,
+                            externalScheme);
         }
 
         @Override
